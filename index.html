@@ -41,6 +41,8 @@
     .btn-mic { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: white; font-size: 3rem; margin: 2rem auto; display: block; box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3); }
     .btn-mic.recording { background: linear-gradient(135deg, #ef4444, #ec4899); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulseOpacity { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
     .result-box { margin-top: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #dbeafe, #e0f2fe); border: 2px solid #3b82f6; border-radius: 1rem; animation: slideUp 0.3s; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -101,12 +103,36 @@
       <div id="tab-text" class="tab-content active">
         <textarea id="inputText" placeholder="Scrivi / Napisz..."></textarea>
         <button class="btn btn-primary" onclick="translateText()" style="margin-top: 1rem;">🔄 Przetłumacz</button>
+        
+        <!-- Wynik dla Tekst -->
+        <div id="resultBox-text" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊</button>
+          </div>
+          <div class="result-text"></div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+            🎧 <span class="lektor-lang"></span>
+          </div>
+        </div>
       </div>
 
       <div id="tab-speech" class="tab-content">
         <div style="text-align: center;">
           <button id="micBtn" class="btn-mic" onclick="toggleRecording()">🎤</button>
           <p id="micStatus">Kliknij aby nagrać</p>
+        </div>
+        
+        <!-- Wynik dla Mowa -->
+        <div id="resultBox-speech" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊</button>
+          </div>
+          <div class="result-text"></div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+            🎧 <span class="lektor-lang"></span>
+          </div>
         </div>
       </div>
 
@@ -119,6 +145,18 @@
         <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handleImage(this.files[0])">
         <div id="imagePreview" class="hidden" style="margin-top: 1rem;">
           <img id="previewImg" style="width: 100%; border-radius: 1rem;">
+        </div>
+        
+        <!-- Wynik dla Zdjęcie -->
+        <div id="resultBox-photo" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊</button>
+          </div>
+          <div class="result-text"></div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+            🎧 <span class="lektor-lang"></span>
+          </div>
         </div>
       </div>
 
@@ -173,17 +211,6 @@
         </div>
       </div>
 
-      <div id="resultBox" class="result-box hidden">
-        <div class="result-header">
-          <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
-          <button id="speakBtn" class="btn-speak" onclick="speakTranslation()">🔊</button>
-        </div>
-        <div id="resultText" class="result-text"></div>
-        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
-          🎧 <span id="lektorLang"></span>
-        </div>
-      </div>
-
       <div id="loading" class="loading hidden">
         <div class="spinner"></div>
         <p>Tłumaczę...</p>
@@ -197,6 +224,7 @@
     let history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
     let chatMessages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
     let isChatLoading = false;
+    let translationSource = null; // Śledzi skąd pochodzi tłumaczenie: 'text', 'speech', 'photo'
     
     updateHistoryCount();
     displayHistory();
@@ -243,7 +271,7 @@
           content: `Przetłumacz z ${fromLang === 'pl' ? 'polskiego' : 'włoskiego'} na ${toLang === 'it' ? 'włoski' : 'polski'}. TYLKO tłumaczenie.\n\n${input}`
         }]);
         const translated = data.content[0].text.trim();
-        showResult(translated);
+        showResult(translated, 'text');
         saveToHistory(input, translated, fromLang, toLang);
       } catch (e) {
         alert('Błąd tłumaczenia: ' + e.message);
@@ -254,6 +282,46 @@
 
     function toggleRecording() { isRecording ? stopRecording() : startRecording(); }
 
+    async function translateFromSpeech(text) {
+      showLoading();
+      try {
+        const fromLang = await detectLanguage(text);
+        const toLang = fromLang === 'pl' ? 'it' : 'pl';
+        lastTranslationLang = fromLang;
+        const data = await callAPI([{
+          role: "user",
+          content: `Przetłumacz z ${fromLang === 'pl' ? 'polskiego' : 'włoskiego'} na ${toLang === 'it' ? 'włoski' : 'polski'}. TYLKO tłumaczenie.\n\n${text}`
+        }]);
+        const translated = data.content[0].text.trim();
+        showResult(translated, 'speech');
+        saveToHistory(text, translated, fromLang, toLang);
+      } catch (e) {
+        alert('Błąd tłumaczenia: ' + e.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function translateFromPhoto(text) {
+      showLoading();
+      try {
+        const fromLang = await detectLanguage(text);
+        const toLang = fromLang === 'pl' ? 'it' : 'pl';
+        lastTranslationLang = fromLang;
+        const data = await callAPI([{
+          role: "user",
+          content: `Przetłumacz z ${fromLang === 'pl' ? 'polskiego' : 'włoskiego'} na ${toLang === 'it' ? 'włoski' : 'polski'}. TYLKO tłumaczenie.\n\n${text}`
+        }]);
+        const translated = data.content[0].text.trim();
+        showResult(translated, 'photo');
+        saveToHistory(text, translated, fromLang, toLang);
+      } catch (e) {
+        alert('Błąd tłumaczenia: ' + e.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
     function startRecording() {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return alert('Brak wsparcia mowy');
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -261,7 +329,11 @@
       recognition.lang = 'pl-PL';
       recognition.continuous = false;
       recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micStatus').textContent = '🎙️ Nagrywanie...'; };
-      recognition.onresult = async (event) => { const transcript = event.results[0][0].transcript; document.getElementById('inputText').value = transcript; await translateText(); };
+      recognition.onresult = async (event) => { 
+        const transcript = event.results[0][0].transcript; 
+        document.getElementById('inputText').value = transcript;
+        await translateFromSpeech(transcript);
+      };
       recognition.onerror = () => { stopRecording(); alert('Błąd mowy'); };
       recognition.onend = () => stopRecording();
       recognition.start();
@@ -343,7 +415,7 @@
         }], 3000);
         const extracted = data.content[0].text.trim();
         document.getElementById('inputText').value = extracted;
-        await translateText();
+        await translateFromPhoto(extracted);
       } catch (e) {
         console.error('OCR error:', e);
         let errorMsg = 'Błąd odczytywania tekstu z obrazu';
@@ -410,13 +482,24 @@
     }
 
     function updateHistoryCount() { document.getElementById('historyCount').textContent = history.length; }
-    function showResult(text) {
+    
+    function showResult(text, source) {
       currentTranslation = text;
-      document.getElementById('resultText').textContent = text;
-      document.getElementById('lektorLang').textContent = lastTranslationLang === 'pl' ? 'Italiano 🇮🇹' : 'Polski 🇵🇱';
-      document.getElementById('resultBox').classList.remove('hidden');
+      translationSource = source; // Zapisz źródło: 'text', 'speech', 'photo'
+      
+      // Ukryj wszystkie boxy wyników
+      document.querySelectorAll('.result-box').forEach(box => box.classList.add('hidden'));
+      
+      // Pokaż tylko w odpowiedniej zakładce
+      const resultBox = document.getElementById(`resultBox-${source}`);
+      if (resultBox) {
+        resultBox.classList.remove('hidden');
+        resultBox.querySelector('.result-text').textContent = text;
+        resultBox.querySelector('.lektor-lang').textContent = lastTranslationLang === 'pl' ? 'Italiano 🇮🇹' : 'Polski 🇵🇱';
+      }
     }
-    function showLoading() { document.getElementById('loading').classList.remove('hidden'); document.getElementById('resultBox').classList.add('hidden'); }
+    
+    function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
 
     fetch(`${API_URL}/`).then(r => r.json()).then(d => console.log('✅ Backend:', d)).catch(e => console.error('❌ Backend:', e));
@@ -473,6 +556,24 @@
       document.getElementById('sendChatBtn').disabled = true;
       displayChat();
 
+      // Dodaj wizualny indicator "Nauczyciel pisze..."
+      const chatContent = document.getElementById('chatContent');
+      const typingIndicator = document.createElement('div');
+      typingIndicator.id = 'typingIndicator';
+      typingIndicator.style.cssText = 'display: flex; justify-content: flex-start;';
+      typingIndicator.innerHTML = `
+        <div style="max-width: 85%; padding: 0.75rem; border-radius: 1rem; background: white; border: 2px solid #e5e7eb; color: #6b7280; display: flex; align-items: center; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.25rem;">
+            <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; animation: pulseOpacity 1.4s infinite;"></div>
+            <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; animation: pulseOpacity 1.4s infinite 0.2s;"></div>
+            <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; animation: pulseOpacity 1.4s infinite 0.4s;"></div>
+          </div>
+          <span style="font-size: 0.9rem;">Nauczyciel pisze...</span>
+        </div>
+      `;
+      chatContent.appendChild(typingIndicator);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+
       try {
         // Przygotuj kontekst z ostatnimi tłumaczeniami
         let contextInfo = '';
@@ -496,6 +597,9 @@
           }
         ], 1500);
 
+        // Usuń indicator "pisze..."
+        typingIndicator.remove();
+
         chatMessages.push({
           role: 'assistant',
           content: data.content[0].text.trim(),
@@ -505,6 +609,11 @@
         localStorage.setItem('chatMessages', JSON.stringify(chatMessages));
         displayChat();
       } catch (e) {
+        // Usuń indicator w przypadku błędu
+        if (document.getElementById('typingIndicator')) {
+          document.getElementById('typingIndicator').remove();
+        }
+        
         chatMessages.push({
           role: 'assistant',
           content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie.',
@@ -566,7 +675,12 @@
 
     function installPWA() {
       if (!deferredPrompt) {
-        alert('Aplikacja jest już zainstalowana lub instalacja nie jest dostępna w tej przeglądarce.');
+        // Sprawdź czy aplikacja już jest zainstalowana
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          alert('Aplikacja jest już zainstalowana! Otwórz ją z ekranu głównego.');
+        } else {
+          alert('Instalacja PWA nie jest dostępna w tej przeglądarce.\n\nSpróbuj:\n• Chrome na Android\n• Safari na iOS (użyj "Dodaj do ekranu głównego")');
+        }
         return;
       }
       
@@ -578,7 +692,10 @@
           console.log('✅ Użytkownik zaakceptował instalację');
         } else {
           console.log('❌ Użytkownik odrzucił instalację');
-          document.getElementById('installBanner').classList.remove('hidden');
+          // Pokaż banner ponownie tylko jeśli użytkownik odrzucił
+          setTimeout(() => {
+            document.getElementById('installBanner').classList.remove('hidden');
+          }, 2000);
         }
         deferredPrompt = null;
       });
