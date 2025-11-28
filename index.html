@@ -12,6 +12,9 @@
   <link rel="manifest" href="pwa-manifest.json">
   <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇮🇹</text></svg>">
   
+  <!-- Netlify Identity Widget -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  
   <title>TraduciAMO - Tłumacz Włoski-Polski</title>
   
   <style>
@@ -64,9 +67,34 @@
       .tab { font-size: 0.85rem; padding: 0.75rem 0.5rem; min-width: 80px; }
       .tab-content { padding: 1rem; }
     }
+    
+    /* Login Screen */
+    .login-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 50%, #ffe4e6 100%); z-index: 9999; align-items: center; justify-content: center; }
+    .login-screen.active { display: flex; }
+    .login-card { background: white; padding: 3rem; border-radius: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-width: 400px; width: 90%; text-align: center; }
+    .login-logo { font-size: 4rem; margin-bottom: 1rem; }
+    .login-title { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #3b82f6, #f43f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; }
+    .login-subtitle { color: #6b7280; margin-bottom: 2rem; }
+    .login-btn { width: 100%; padding: 1rem 2rem; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; border-radius: 1rem; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s; }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); }
+    .user-info { display: none; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .user-info.active { display: flex; }
+    .logout-btn { padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
   </style>
 </head>
 <body>
+  <!-- Ekran logowania -->
+  <div id="loginScreen" class="login-screen active">
+    <div class="login-card">
+      <div class="login-logo">🔐</div>
+      <h1 class="login-title">TraduciAMO</h1>
+      <p class="login-subtitle">Zaloguj się aby kontynuować</p>
+      <button class="login-btn" onclick="openLoginModal()">
+        🔑 Zaloguj się
+      </button>
+    </div>
+  </div>
+
   <div class="app-container">
     <div class="header">
       <div class="header-logo">
@@ -79,6 +107,14 @@
 
     <div class="success-banner">✅ Backend aktywny!</div>
     <div class="info-banner">✨ Auto-detect • Polski ↔️ Włoski</div>
+    
+    <!-- Info o zalogowanym użytkowniku -->
+    <div id="userInfo" class="user-info">
+      <span style="flex: 1; text-align: left; font-weight: 600; color: #1f2937;">
+        👤 <span id="userEmail"></span>
+      </span>
+      <button class="logout-btn" onclick="logout()">Wyloguj</button>
+    </div>
     
     <!-- Install PWA Button (desktop) -->
     <div id="installBanner" class="hidden" style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
@@ -700,6 +736,66 @@
         deferredPrompt = null;
       });
     }
+
+    // ============================================
+    // NETLIFY IDENTITY - SYSTEM LOGOWANIA
+    // ============================================
+    
+    const netlifyIdentity = window.netlifyIdentity;
+    
+    // Inicjalizacja Identity
+    netlifyIdentity.on('init', user => {
+      if (!user) {
+        // Użytkownik nie zalogowany - pokaż ekran logowania
+        showLoginScreen();
+      } else {
+        // Użytkownik zalogowany - pokaż aplikację
+        showApp(user);
+      }
+    });
+
+    // Po zalogowaniu
+    netlifyIdentity.on('login', user => {
+      console.log('✅ Użytkownik zalogowany:', user.email);
+      showApp(user);
+      netlifyIdentity.close(); // Zamknij modal logowania
+    });
+
+    // Po wylogowaniu
+    netlifyIdentity.on('logout', () => {
+      console.log('👋 Użytkownik wylogowany');
+      showLoginScreen();
+    });
+
+    // Funkcja otwierająca modal logowania
+    function openLoginModal() {
+      netlifyIdentity.open();
+    }
+
+    // Funkcja wylogowania
+    function logout() {
+      if (confirm('Czy na pewno chcesz się wylogować?')) {
+        netlifyIdentity.logout();
+      }
+    }
+
+    // Pokaż ekran logowania
+    function showLoginScreen() {
+      document.getElementById('loginScreen').classList.add('active');
+      document.querySelector('.app-container').style.display = 'none';
+      document.getElementById('userInfo').classList.remove('active');
+    }
+
+    // Pokaż aplikację
+    function showApp(user) {
+      document.getElementById('loginScreen').classList.remove('active');
+      document.querySelector('.app-container').style.display = 'block';
+      document.getElementById('userInfo').classList.add('active');
+      document.getElementById('userEmail').textContent = user.email;
+    }
+
+    // Inicjalizacja przy załadowaniu strony
+    netlifyIdentity.init();
   </script>
 </body>
 </html>
