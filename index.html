@@ -269,12 +269,47 @@
   <script>
     const API_URL = 'https://traduciamo-backend.onrender.com';
     let currentTab = 'text', lastTranslationLang = null, currentTranslation = '', recognition = null, isRecording = false, isSpeaking = false;
-    let history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
+    let history = [];
     let chatMessages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
     let isChatLoading = false;
-    let translationSource = null; // Śledzi skąd pochodzi tłumaczenie: 'text', 'speech', 'photo'
+    let translationSource = null;
+    let currentUser = null; // Netlify Identity user
     
-    updateHistoryCount();
+    // Funkcja ładowania historii z MongoDB
+    async function loadHistory() {
+      if (!currentUser) {
+        history = [];
+        displayHistory();
+        updateHistoryCount();
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/api/history/get?userId=${encodeURIComponent(currentUser.email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          history = data.map(item => ({
+            id: item._id,
+            timestamp: new Date(item.timestamp).toLocaleString('pl-PL'),
+            original: item.original,
+            translated: item.translated,
+            direction: `${item.fromLang}-${item.toLang}`
+          }));
+          displayHistory();
+          updateHistoryCount();
+          updateRecentTranslations();
+          console.log('✅ Historia załadowana z MongoDB:', history.length, 'tłumaczeń');
+        }
+      } catch (error) {
+        console.error('❌ Błąd ładowania historii:', error);
+        // Fallback do localStorage jeśli MongoDB nie działa
+        history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
+        displayHistory();
+        updateHistoryCount();
+      }
+    }
+    
+    // Na start
     displayHistory();
     displayChat();
     updateRecentTranslations();
@@ -494,13 +529,53 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    function saveToHistory(original, translated, fromLang, toLang) {
-      history.unshift({ id: Date.now(), timestamp: new Date().toLocaleString('pl-PL'), original, translated, direction: `${fromLang}-${toLang}` });
+    async function saveToHistory(original, translated, fromLang, toLang) {
+      const historyItem = { 
+        id: Date.now(), 
+        timestamp: new Date().toLocaleString('pl-PL'), 
+        original, 
+        translated, 
+        direction: `${fromLang}-${toLang}` 
+      };
+      
+      // Dodaj lokalnie od razu (dla UX)
+      history.unshift(historyItem);
       history = history.slice(0, 100);
-      localStorage.setItem('translationHistory', JSON.stringify(history));
       updateHistoryCount();
       displayHistory();
-      updateRecentTranslations(); // Aktualizuj ostatnie tłumaczenia w zakładce Nauczyciel
+      updateRecentTranslations();
+      
+      // Zapisz do MongoDB w tle
+      if (currentUser) {
+        try {
+          const response = await fetch(`${API_URL}/api/history/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.email,
+              original,
+              translated,
+              fromLang,
+              toLang
+            })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Tłumaczenie zapisane w MongoDB');
+          } else {
+            console.error('❌ Błąd zapisu do MongoDB');
+            // Fallback do localStorage
+            localStorage.setItem('translationHistory', JSON.stringify(history));
+          }
+        } catch (error) {
+          console.error('❌ Błąd zapisu do MongoDB:', error);
+          // Fallback do localStorage
+          localStorage.setItem('translationHistory', JSON.stringify(history));
+        }
+      } else {
+        // Jeśli nie zalogowany, zapisz lokalnie
+        localStorage.setItem('translationHistory', JSON.stringify(history));
+      }
     }
 
     function displayHistory() {
@@ -521,12 +596,33 @@
       `).join('');
     }
 
-    function clearHistory() {
-      if (!confirm('Wyczyścić?')) return;
+    async function clearHistory() {
+      if (!confirm('Wyczyścić całą historię?')) return;
+      
       history = [];
-      localStorage.removeItem('translationHistory');
       updateHistoryCount();
       displayHistory();
+      updateRecentTranslations();
+      
+      // Wyczyść MongoDB
+      if (currentUser) {
+        try {
+          const response = await fetch(`${API_URL}/api/history/clear?userId=${encodeURIComponent(currentUser.email)}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            console.log('✅ Historia wyczyszczona w MongoDB');
+          } else {
+            console.error('❌ Błąd czyszczenia MongoDB');
+          }
+        } catch (error) {
+          console.error('❌ Błąd czyszczenia MongoDB:', error);
+        }
+      }
+      
+      // Wyczyść localStorage
+      localStorage.removeItem('translationHistory');
     }
 
     function updateHistoryCount() { document.getElementById('historyCount').textContent = history.length; }
@@ -879,6 +975,12 @@
 
     // Pokaż ekran logowania
     function showLoginScreen() {
+      currentUser = null; // Wyczyść użytkownika
+      history = []; // Wyczyść historię
+      displayHistory();
+      updateHistoryCount();
+      updateRecentTranslations();
+      
       document.getElementById('loginScreen').classList.add('active');
       document.querySelector('.app-container').style.display = 'none';
       document.getElementById('userInfo').classList.remove('active');
@@ -886,10 +988,14 @@
 
     // Pokaż aplikację
     function showApp(user) {
+      currentUser = user; // Zapisz użytkownika globalnie
       document.getElementById('loginScreen').classList.remove('active');
       document.querySelector('.app-container').style.display = 'block';
       document.getElementById('userInfo').classList.add('active');
       document.getElementById('userEmail').textContent = user.email;
+      
+      // Załaduj historię z MongoDB
+      loadHistory();
     }
 
     // Inicjalizacja przy załadowaniu strony
