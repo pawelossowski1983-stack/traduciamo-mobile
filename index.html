@@ -15,6 +15,18 @@
   <!-- Netlify Identity Widget -->
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   
+  <style>
+    /* Wymuszenie widoczności modalu Netlify Identity */
+    .netlify-identity-widget {
+      position: fixed !important;
+      z-index: 99999 !important;
+    }
+    
+    iframe[id^="netlify-identity-widget"] {
+      z-index: 99999 !important;
+    }
+  </style>
+  
   <title>TraduciAMO - Tłumacz Włoski-Polski</title>
   
   <style>
@@ -69,7 +81,7 @@
     }
     
     /* Login Screen */
-    .login-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 50%, #ffe4e6 100%); z-index: 9999; align-items: center; justify-content: center; }
+    .login-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 50%, #ffe4e6 100%); z-index: 1000; align-items: center; justify-content: center; }
     .login-screen.active { display: flex; }
     .login-card { background: white; padding: 3rem; border-radius: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-width: 400px; width: 90%; text-align: center; }
     .login-logo { font-size: 4rem; margin-bottom: 1rem; }
@@ -837,7 +849,20 @@
       }
       
       console.log('✅ Identity dostępne, otwieranie...');
+      
+      // Ukryj ekran logowania żeby nie blokował modalu
+      document.getElementById('loginScreen').style.opacity = '0';
+      document.getElementById('loginScreen').style.pointerEvents = 'none';
+      
       window.netlifyIdentity.open();
+      
+      // Przywróć po 1 sekundzie (jeśli modal się nie otworzy)
+      setTimeout(() => {
+        if (!window.netlifyIdentity.currentUser()) {
+          document.getElementById('loginScreen').style.opacity = '1';
+          document.getElementById('loginScreen').style.pointerEvents = 'auto';
+        }
+      }, 1000);
     }
 
     // Funkcja wylogowania
