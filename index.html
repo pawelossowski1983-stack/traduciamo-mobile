@@ -12,14 +12,16 @@
   <link rel="manifest" href="pwa-manifest.json">
   <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇮🇹</text></svg>">
   
-  <title>TraduciAMO - Tłumacz Włoski-Polski</title>
-<link rel="stylesheet" href="styles-modern.css">
-  
+  <title>TraduciAMO Mobile - Tłumacz Włoski-Polski</title>
+  <link rel="stylesheet" href="styles-modern.css">
+</head>
+<body>
+  <!-- Login Screen -->
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <div class="login-logo">🇮🇹</div>
       <h1 class="login-title">TraduciAMO</h1>
-      <p class="login-subtitle">Tłumacz włosko-polski z AI</p>
+      <p class="login-subtitle">Tłumacz włosko-polski z AI - Mobile</p>
       
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="switchAuthTab('login')">Zaloguj</button>
@@ -82,7 +84,7 @@
         <button class="tab active" onclick="switchTab('text')">📝 Tekst</button>
         <button class="tab" onclick="switchTab('speech')">🎤 Mowa</button>
         <button class="tab" onclick="switchTab('photo')">📸 Foto</button>
-        <button class="tab" onclick="switchTab('history')">📚 (<span id="historyCount">0</span>)</button>
+        <button class="tab" onclick="switchTab('history')">📚 Historia (<span id="historyCount">0</span>)</button>
         <button class="tab" onclick="switchTab('teacher')">👨‍🏫 AI</button>
       </div>
 
@@ -90,6 +92,18 @@
       <div id="tab-text" class="tab-content active">
         <textarea id="inputText" placeholder="Scrivi / Napisz..."></textarea>
         <button class="btn btn-primary" onclick="translateText()" style="margin-top: 1rem;">🔄 Przetłumacz</button>
+        
+        <div id="loading-text" class="loading hidden">
+          <p style="font-size: 1.1rem; font-weight: 600;">Tłumaczę<span class="dots-loader"><span></span><span></span><span></span></span></p>
+        </div>
+        
+        <div id="resultBox-text" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊 <span id="lektorLang-text"></span></button>
+          </div>
+          <div class="result-text" id="resultText-text"></div>
+        </div>
       </div>
 
       <!-- Zakładka Mowa -->
@@ -97,6 +111,18 @@
         <div style="text-align: center;">
           <button id="micBtn" class="btn-mic" onclick="toggleRecording()">🎤</button>
           <p id="micStatus" style="color: #6b7280;">Kliknij aby nagrać</p>
+        </div>
+        
+        <div id="loading-speech" class="loading hidden">
+          <p style="font-size: 1.1rem; font-weight: 600;">Tłumaczę<span class="dots-loader"><span></span><span></span><span></span></span></p>
+        </div>
+        
+        <div id="resultBox-speech" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊 <span id="lektorLang-speech"></span></button>
+          </div>
+          <div class="result-text" id="resultText-speech"></div>
         </div>
       </div>
 
@@ -111,15 +137,29 @@
         <div id="imagePreview" class="hidden" style="margin-top: 1rem;">
           <img id="previewImg" style="width: 100%; border-radius: 1rem; border: 2px solid #e5e7eb;">
         </div>
+        
+        <div id="loading-photo" class="loading hidden">
+          <p style="font-size: 1.1rem; font-weight: 600;">Tłumaczę<span class="dots-loader"><span></span><span></span><span></span></span></p>
+        </div>
+        
+        <div id="resultBox-photo" class="result-box hidden">
+          <div class="result-header">
+            <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
+            <button class="btn-speak" onclick="speakTranslation()">🔊 <span id="lektorLang-photo"></span></button>
+          </div>
+          <div class="result-text" id="resultText-photo"></div>
+        </div>
       </div>
 
       <!-- Zakładka Historia -->
       <div id="tab-history" class="tab-content">
         <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-          <h3>Historia</h3>
-          <button class="btn" onclick="clearHistory()" style="padding: 0.5rem 1rem; background: #ef4444; color: white;">🗑️</button>
+          <h3>Historia tłumaczeń</h3>
+          <button class="btn" onclick="clearHistory()" style="padding: 0.5rem 1rem; background: #ef4444; color: white;">🗑️ Wyczyść</button>
         </div>
-        <div id="historyList"></div>
+        <div class="history-container">
+          <div id="historyList"></div>
+        </div>
       </div>
 
       <!-- Zakładka Nauczyciel AI -->
@@ -129,6 +169,15 @@
           <button onclick="clearChat()" style="padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 0.75rem;">
             🗑️ Wyczyść
           </button>
+        </div>
+
+        <!-- Ostatnie tłumaczenie -->
+        <div id="lastTranslationBox" class="recent-translation-box hidden">
+          <p class="recent-translation-label">📝 OSTATNIE TŁUMACZENIE:</p>
+          <div class="recent-translation-content">
+            <div style="margin-bottom: 0.5rem;"><strong>Oryginał:</strong> <span id="lastTranslationOriginal"></span></div>
+            <div style="color: #3b82f6;"><strong>Tłumaczenie:</strong> <span id="lastTranslationTranslated"></span></div>
+          </div>
         </div>
 
         <div id="chatMessages" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: #f9fafb; border-radius: 1rem; min-height: 200px;">
@@ -158,19 +207,6 @@
           </button>
         </div>
       </div>
-
-      <div id="resultBox" class="result-box hidden">
-        <div class="result-header">
-          <strong style="color: #3b82f6;">✅ Tłumaczenie:</strong>
-          <button id="speakBtn" class="btn-speak" onclick="speakTranslation()">🔊 <span id="lektorLang"></span></button>
-        </div>
-        <div id="resultText" class="result-text"></div>
-      </div>
-
-      <div id="loading" class="loading hidden">
-        <div class="spinner"></div>
-        <p>Tłumaczę...</p>
-      </div>
     </div>
   </div>
 
@@ -179,6 +215,8 @@
     let currentTab = 'text';
     let lastTranslationLang = null;
     let currentTranslation = '';
+    let translationSource = null;
+    let lastTranslation = null; // Ostatnie tłumaczenie dla nauczyciela
     let recognition = null;
     let isRecording = false;
     let isSpeaking = false;
@@ -196,6 +234,7 @@
         verifyToken();
       }
       displayChat();
+      updateLastTranslationBox();
     });
 
     // ============================================
@@ -395,7 +434,8 @@
       const input = document.getElementById('inputText').value.trim();
       if (!input) return alert('Wpisz tekst!');
       
-      showLoading();
+      translationSource = 'text';
+      showLoading('text');
       
       try {
         const fromLang = await detectLanguage(input);
@@ -408,12 +448,13 @@
         
         const translated = data.content[0].text.trim();
         lastTranslationLang = toLang;
-        showResult(translated);
+        showResult(translated, 'text');
         await saveToHistory(input, translated, fromLang, toLang);
+        updateLastTranslation(input, translated);
       } catch (error) {
         alert('Błąd tłumaczenia: ' + error.message);
       } finally {
-        hideLoading();
+        hideLoading('text');
       }
     }
 
@@ -450,7 +491,8 @@
         const transcript = event.results[0][0].transcript;
         document.getElementById('micStatus').textContent = `Rozpoznano: "${transcript}"`;
         
-        showLoading();
+        translationSource = 'speech';
+        showLoading('speech');
         
         try {
           const fromLang = await detectLanguage(transcript);
@@ -463,12 +505,13 @@
           
           const translated = data.content[0].text.trim();
           lastTranslationLang = toLang;
-          showResult(translated);
+          showResult(translated, 'speech');
           await saveToHistory(transcript, translated, fromLang, toLang);
+          updateLastTranslation(transcript, translated);
         } catch (error) {
           alert('Błąd tłumaczenia: ' + error.message);
         } finally {
-          hideLoading();
+          hideLoading('speech');
         }
       };
 
@@ -497,7 +540,12 @@
     }
 
     // ============================================
-    // PHOTO OCR
+    // SCREENSHOT PASTE (Desktop)
+    // ============================================
+
+    // ============================================
+    // ============================================
+    // PHOTO OCR (Mobile - Camera + Gallery)
     // ============================================
 
     function openCamera() {
@@ -520,7 +568,8 @@
       };
       reader.readAsDataURL(file);
 
-      showLoading();
+      translationSource = 'photo';
+      showLoading('photo');
 
       try {
         const compressed = await compressImage(file);
@@ -529,19 +578,47 @@
         const data = await callAPI([{
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: file.type, data: base64 } },
-            { type: "text", text: "Rozpoznaj tekst z tego obrazu (OCR). Jeśli tekst jest po włosku, przetłumacz na polski. Jeśli po polsku, przetłumacz na włoski. TYLKO tłumaczenie." }
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
+            { type: "text", text: \`Rozpoznaj tekst z tego obrazu (OCR) i przetłumacz go.
+
+INSTRUKCJE:
+1. Odczytaj cały tekst z obrazu, zachowując jego strukturę
+2. Jeśli tekst jest po włosku → przetłumacz na polski
+3. Jeśli tekst jest po polsku → przetłumacz na włoski
+4. ZACHOWAJ formatowanie:
+   - Nowe linie (Enter) → zachowaj jako \\n
+   - Akapity → zachowaj odstępy
+   - Listy punktowane → zachowaj numerację/punkty
+   - Nagłówki → zachowaj wielkość liter
+5. Odpowiedz TYLKO przetłumaczonym tekstem z zachowanym formatowaniem
+
+Przykład:
+Jeśli obraz zawiera:
+"Witaj!
+
+Jak się masz?"
+
+Odpowiedź: "Ciao!
+
+Come stai?"\` }
           ]
         }], 3000);
         
         const translated = data.content[0].text.trim();
+        
+        // Próbuj wyodrębnić oryginalny tekst z odpowiedzi
+        const lines = translated.split('\\n');
+        const original = lines[0] || translated;
+        
         lastTranslationLang = null;
-        showResult(translated);
+        showResult(translated, 'photo');
+        await saveToHistory(original, translated, 'unknown', 'unknown');
+        updateLastTranslation(original, translated);
       } catch (error) {
         console.error('❌ OCR Error:', error);
-        alert('Błąd OCR: ' + error.message);
+        alert('Błąd OCR: ' + error.message + '\\n\\nSpróbuj ponownie lub użyj innego zdjęcia.');
       } finally {
-        hideLoading();
+        hideLoading('photo');
         event.target.value = '';
       }
     }
@@ -579,35 +656,63 @@
       });
     }
 
-    // ============================================
-    // TEXT-TO-SPEECH
+    // TEXT-TO-SPEECH - POPRAWIONY GŁOS POLSKI
     // ============================================
 
     function speakTranslation() {
       if (isSpeaking) {
         window.speechSynthesis.cancel();
         isSpeaking = false;
-        document.getElementById('speakBtn').classList.remove('speaking');
+        document.querySelectorAll('.btn-speak').forEach(btn => btn.classList.remove('speaking'));
         return;
       }
 
       if (!currentTranslation) return;
 
       const utterance = new SpeechSynthesisUtterance(currentTranslation);
-      utterance.lang = lastTranslationLang === 'it' ? 'it-IT' : 'pl-PL';
-      utterance.rate = 0.9;
+      
+      // Poprawiony głos polski
+      if (lastTranslationLang === 'pl') {
+        utterance.lang = 'pl-PL';
+        utterance.rate = 0.85;
+        utterance.pitch = 1.0;
+        
+        // Spróbuj znaleźć lepszy głos polski
+        const voices = window.speechSynthesis.getVoices();
+        const polishVoice = voices.find(v => 
+          v.lang === 'pl-PL' && (v.name.includes('Google') || v.name.includes('Microsoft'))
+        ) || voices.find(v => v.lang === 'pl-PL');
+        
+        if (polishVoice) {
+          utterance.voice = polishVoice;
+        }
+      } else {
+        utterance.lang = 'it-IT';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+      }
 
       utterance.onstart = () => {
         isSpeaking = true;
-        document.getElementById('speakBtn').classList.add('speaking');
+        document.querySelectorAll('.btn-speak').forEach(btn => btn.classList.add('speaking'));
       };
 
       utterance.onend = () => {
         isSpeaking = false;
-        document.getElementById('speakBtn').classList.remove('speaking');
+        document.querySelectorAll('.btn-speak').forEach(btn => btn.classList.remove('speaking'));
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Opóźnienie dla lepszej jakości
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    }
+
+    // Załaduj głosy przy starcie
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
     }
 
     // ============================================
@@ -668,6 +773,15 @@
           displayHistory();
           updateHistoryCount();
           console.log('✅ Historia załadowana:', history.length);
+          
+          // Ustaw ostatnie tłumaczenie
+          if (history.length > 0) {
+            lastTranslation = {
+              original: history[0].original,
+              translated: history[0].translated
+            };
+            updateLastTranslationBox();
+          }
         }
       } catch (error) {
         console.error('❌ Błąd ładowania historii:', error);
@@ -686,7 +800,7 @@
         <div class="history-item">
           <div class="history-header">
             <span>${item.timestamp}</span>
-            <span>${item.direction === 'pl-it' ? '🇵🇱→🇮🇹' : '🇮🇹→🇵🇱'}</span>
+            <span>${item.direction === 'pl-it' ? '🇵🇱→🇮🇹' : item.direction === 'it-pl' ? '🇮🇹→🇵🇱' : '📝'}</span>
           </div>
           <div class="history-text"><strong>Oryginalny:</strong> ${item.original}</div>
           <div class="history-text" style="color: #3b82f6;"><strong>Tłumaczenie:</strong> ${item.translated}</div>
@@ -719,7 +833,28 @@
     }
 
     // ============================================
-    // TEACHER AI CHAT
+    // LAST TRANSLATION BOX
+    // ============================================
+
+    function updateLastTranslation(original, translated) {
+      lastTranslation = { original, translated };
+      updateLastTranslationBox();
+    }
+
+    function updateLastTranslationBox() {
+      const box = document.getElementById('lastTranslationBox');
+      
+      if (lastTranslation) {
+        document.getElementById('lastTranslationOriginal').textContent = lastTranslation.original;
+        document.getElementById('lastTranslationTranslated').textContent = lastTranslation.translated;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    // ============================================
+    // TEACHER AI CHAT - ULEPSZONY
     // ============================================
 
     function displayChat() {
@@ -749,8 +884,16 @@
                   ? 'background: #f3f4f6; border: 2px dashed #9ca3af; color: #6b7280;'
                   : 'background: white; border: 2px solid #e5e7eb; color: #1f2937;'
             }">
-              <p style="font-size: 0.9rem; white-space: pre-wrap; line-height: 1.4;">${msg.content}</p>
-              ${msg.timestamp ? `<p style="font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.7;">${msg.timestamp}</p>` : ''}
+              ${isTyping ? `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem;">
+                  <span class="dots-loader" style="color: #3b82f6;">
+                    <span></span><span></span><span></span>
+                  </span>
+                </div>
+              ` : `
+                <p style="font-size: 0.9rem; white-space: pre-wrap; line-height: 1.4;">${msg.content}</p>
+                ${msg.timestamp ? `<p style="font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.7;">${msg.timestamp}</p>` : ''}
+              `}
             </div>
           </div>
         `;
@@ -778,21 +921,18 @@
       document.getElementById('sendChatBtn').disabled = true;
       displayChat();
 
-      // Dodaj "pisze..." indicator
+      // Dodaj "odpowiada..." indicator z mrugającymi kropkami
       chatMessages.push({
         role: 'assistant',
-        content: '💬 Nauczyciel pisze...',
         isTyping: true
       });
       displayChat();
 
       try {
-        // Przygotuj kontekst z ostatnimi tłumaczeniami
+        // Przygotuj kontekst z ostatnim tłumaczeniem
         let contextInfo = '';
-        if (history.length > 0) {
-          const recent = history.slice(0, 2);
-          contextInfo = '\n\nOstatnie tłumaczenia użytkownika:\n' + 
-            recent.map(h => `- "${h.original}" → "${h.translated}"`).join('\n');
+        if (lastTranslation) {
+          contextInfo = `\n\nOstatnie tłumaczenie użytkownika:\n- "${lastTranslation.original}" → "${lastTranslation.translated}"`;
         }
 
         // Konwersacja
@@ -811,7 +951,7 @@
           }
         ], 1500);
 
-        // Usuń "pisze..." indicator
+        // Usuń "odpowiada..." indicator
         chatMessages = chatMessages.filter(m => !m.isTyping);
 
         chatMessages.push({
@@ -823,7 +963,7 @@
         localStorage.setItem('chatMessages', JSON.stringify(chatMessages));
         displayChat();
       } catch (e) {
-        // Usuń "pisze..." indicator
+        // Usuń "odpowiada..." indicator
         chatMessages = chatMessages.filter(m => !m.isTyping);
         
         chatMessages.push({
@@ -850,20 +990,47 @@
     // UI HELPERS
     // ============================================
 
-    function showResult(text) {
+    function showResult(text, source) {
       currentTranslation = text;
-      document.getElementById('resultText').textContent = text;
-      document.getElementById('lektorLang').textContent = lastTranslationLang === 'pl' ? 'Polski' : 'Italiano';
-      document.getElementById('resultBox').classList.remove('hidden');
+      translationSource = source;
+      
+      // Ukryj wszystkie result boxy
+      document.querySelectorAll('.result-box').forEach(box => box.classList.add('hidden'));
+      
+      // Pokaż tylko dla aktualnego źródła
+      const resultBox = document.getElementById(`resultBox-${source}`);
+      if (resultBox) {
+        resultBox.classList.remove('hidden');
+        
+        // Zachowaj formatowanie tekstu (nowe linie, odstępy)
+        const resultTextEl = resultBox.querySelector('.result-text');
+        resultTextEl.style.whiteSpace = 'pre-wrap'; // Zachowuje \n i spacje
+        resultTextEl.textContent = text;
+        
+        const lektorSpan = document.getElementById(`lektorLang-${source}`);
+        if (lektorSpan) {
+          lektorSpan.textContent = lastTranslationLang === 'pl' ? 'Polski' : 'Italiano';
+        }
+      }
     }
 
-    function showLoading() {
-      document.getElementById('loading').classList.remove('hidden');
-      document.getElementById('resultBox').classList.add('hidden');
+    function showLoading(source) {
+      // Ukryj wszystkie loading
+      document.querySelectorAll('[id^="loading-"]').forEach(el => el.classList.add('hidden'));
+      // Pokaż tylko dla aktualnego źródła
+      const loading = document.getElementById(`loading-${source}`);
+      if (loading) {
+        loading.classList.remove('hidden');
+      }
+      // Ukryj result boxy
+      document.querySelectorAll('.result-box').forEach(box => box.classList.add('hidden'));
     }
 
-    function hideLoading() {
-      document.getElementById('loading').classList.add('hidden');
+    function hideLoading(source) {
+      const loading = document.getElementById(`loading-${source}`);
+      if (loading) {
+        loading.classList.add('hidden');
+      }
     }
   </script>
 </body>
