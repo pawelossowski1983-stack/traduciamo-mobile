@@ -213,7 +213,7 @@
         <h1>TraduciAMO</h1>
         <div class="flag">🇮🇹</div>
       </div>
-      <p>Il tuo assistente linguistico AI</p>
+      <p>Il tuo assistente linguistico AI - Desktop</p>
     </div>
 
     <div class="success-banner">✅ Backend aktywny!</div>
@@ -266,16 +266,17 @@
         </div>
       </div>
 
+      <!-- Zakładka Screenshot -->
       <!-- Zakładka Foto -->
       <div id="tab-photo" class="tab-content">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <button class="btn btn-primary" onclick="openCamera()" style="padding: 2rem;">📷<br>Kamera</button>
-          <button class="btn btn-primary" onclick="openGallery()" style="padding: 2rem;">🖼️<br>Galeria</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <button class="btn btn-primary" onclick="openCamera()" style="padding: 2rem 1rem;">📷<br>Kamera</button>
+          <button class="btn btn-primary" onclick="openGallery()" style="padding: 2rem 1rem;">🖼️<br>Galeria</button>
         </div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
         <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
-        <div id="imagePreview" class="hidden" style="margin-top: 1rem;">
-          <img id="previewImg" style="width: 100%; border-radius: 1rem; border: 2px solid #e5e7eb;">
+        <div id="imagePreview" class="hidden" style="margin-top: 1rem; text-align: center;">
+          <img id="previewImg" style="max-width: 100%; border-radius: 1rem; border: 2px solid #e5e7eb;">
         </div>
         
         <div id="loading-photo" class="loading hidden">
@@ -288,6 +289,10 @@
             <button class="btn-speak" onclick="speakTranslation()">🔊 <span id="lektorLang-photo"></span></button>
           </div>
           <div class="result-text" id="resultText-photo"></div>
+        </div>
+      </div>
+
+          <div class="result-text" id="resultText-screenshot"></div>
         </div>
       </div>
 
@@ -683,7 +688,8 @@
     // SCREENSHOT PASTE (Desktop)
     // ============================================
 
-    // ============================================
+    let isPasteReady = false;
+
     // ============================================
     // PHOTO OCR (Mobile - Camera + Gallery)
     // ============================================
@@ -719,14 +725,14 @@
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
-            { type: "text", text: \`Rozpoznaj tekst z tego obrazu (OCR) i przetłumacz go.
+            { type: "text", text: `Rozpoznaj tekst z tego obrazu (OCR) i przetłumacz go.
 
 INSTRUKCJE:
 1. Odczytaj cały tekst z obrazu, zachowując jego strukturę
 2. Jeśli tekst jest po włosku → przetłumacz na polski
 3. Jeśli tekst jest po polsku → przetłumacz na włoski
 4. ZACHOWAJ formatowanie:
-   - Nowe linie (Enter) → zachowaj jako \\n
+   - Nowe linie (Enter) → zachowaj jako \n
    - Akapity → zachowaj odstępy
    - Listy punktowane → zachowaj numerację/punkty
    - Nagłówki → zachowaj wielkość liter
@@ -740,14 +746,14 @@ Jak się masz?"
 
 Odpowiedź: "Ciao!
 
-Come stai?"\` }
+Come stai?"` }
           ]
         }], 3000);
         
         const translated = data.content[0].text.trim();
         
         // Próbuj wyodrębnić oryginalny tekst z odpowiedzi
-        const lines = translated.split('\\n');
+        const lines = translated.split('\n');
         const original = lines[0] || translated;
         
         lastTranslationLang = null;
@@ -756,7 +762,7 @@ Come stai?"\` }
         updateLastTranslation(original, translated);
       } catch (error) {
         console.error('❌ OCR Error:', error);
-        alert('Błąd OCR: ' + error.message + '\\n\\nSpróbuj ponownie lub użyj innego zdjęcia.');
+        alert('Błąd OCR: ' + error.message + '\n\nSpróbuj ponownie lub użyj innego zdjęcia.');
       } finally {
         hideLoading('photo');
         event.target.value = '';
