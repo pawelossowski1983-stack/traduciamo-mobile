@@ -53,7 +53,7 @@
     .error-message.active { display: block; }
     
     /* Header */
-    .header { text-align: center; margin-bottom: 2rem; padding: 2rem 1rem; }
+    .header { text-align: center; margin-bottom: 1rem; padding: 1rem 1rem 0.5rem 1rem; }
     .header-logo { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
     .flag { width: 48px; height: 48px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .header h1 { font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #3b82f6, #f43f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
@@ -99,6 +99,12 @@
     .btn-mic.recording { background: linear-gradient(135deg, #ef4444, #ec4899); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     
+    /* Language Selection Buttons */
+    .lang-btn { flex: 1; padding: 0.75rem 1rem; background: white; border: 2px solid #e5e7eb; border-radius: 0.75rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; color: #6b7280; }
+    .lang-btn.active { background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border-color: transparent; transform: scale(1.05); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+    .lang-btn:hover:not(.active) { border-color: #3b82f6; transform: translateY(-2px); }
+
+    
     /* Loading */
     .loading { text-align: center; padding: 2rem; color: #6b7280; }
     .loading.hidden { display: none; }
@@ -143,6 +149,12 @@
     
     /* Utilities */
     .hidden { display: none !important; }
+    
+    /* Clear Button */
+    .clear-btn { transition: all 0.3s; }
+    .clear-btn:hover { background: #dc2626 !important; transform: scale(1.1); }
+    .clear-btn:active { transform: scale(0.95); }
+
     
     /* Mobile Responsive */
     @media (max-width: 640px) {
@@ -231,7 +243,8 @@
       <!-- Zakładka Tekst -->
       <div id="tab-text" class="tab-content active">
         <div style="position: relative;">
-          <textarea id="inputText" placeholder="Scrivi / Napisz..." style="padding-right: 50px;"></textarea>
+          <textarea id="inputText" placeholder="Scrivi / Napisz..." style="padding-right: 95px;"></textarea>
+          <button onclick="clearTextInput()" class="clear-btn" style="position: absolute; right: 55px; top: 10px; width: 30px; height: 30px; border-radius: 50%; background: #ef4444; color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center;">✕</button>
           <button onclick="startTextDictation()" id="textDictationBtn" style="position: absolute; right: 10px; bottom: 10px; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transition: all 0.3s;">🎤</button>
         </div>
         <button class="btn btn-primary" onclick="translateText()" style="margin-top: 1rem;">🔄 Przetłumacz</button>
@@ -251,6 +264,12 @@
 
       <!-- Zakładka Mowa -->
       <div id="tab-speech" class="tab-content">
+        <!-- Wybór języka -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: center;">
+          <button id="langBtnPL" class="lang-btn active" onclick="setSpeechLang('pl')">🇵🇱 Polski</button>
+          <button id="langBtnIT" class="lang-btn" onclick="setSpeechLang('it')">🇮🇹 Italiano</button>
+        </div>
+        
         <div style="text-align: center;">
           <button id="micBtn" class="btn-mic" onclick="toggleRecording()">🎤</button>
           <p id="micStatus" style="color: #6b7280;">Kliknij aby nagrać</p>
@@ -317,14 +336,20 @@
 
         <!-- Ostatnie tłumaczenie -->
         <div id="lastTranslationBox" class="recent-translation-box hidden">
-          <p class="recent-translation-label">📝 OSTATNIE TŁUMACZENIE:</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <p class="recent-translation-label">📝 OSTATNIE TŁUMACZENIE:</p>
+            <button onclick="copyLastTranslationToChat()" style="padding: 0.25rem 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 0.5rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
+              📋 Skopiuj do czatu
+            </button>
+          </div>
           <div class="recent-translation-content">
             <div style="margin-bottom: 0.5rem;"><strong>Oryginał:</strong> <span id="lastTranslationOriginal"></span></div>
             <div style="color: #3b82f6;"><strong>Tłumaczenie:</strong> <span id="lastTranslationTranslated"></span></div>
           </div>
         </div>
 
-        <div id="chatMessages" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: #f9fafb; border-radius: 1rem; min-height: 200px;">
+        <!-- Chat z ciemniejszym tłem -->
+        <div id="chatMessages" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: #e5e7eb; border-radius: 1rem; min-height: 200px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);">
           <div id="chatContent" style="display: flex; flex-direction: column; gap: 0.75rem;">
             <div style="text-align: center; padding: 2rem; color: #6b7280;">
               <p style="font-size: 2rem; margin-bottom: 0.5rem;">👨‍🏫</p>
@@ -334,28 +359,49 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 0.5rem;">
-          <input
-            type="text"
-            id="chatInput"
-            placeholder="Zadaj pytanie nauczycielowi..."
-            onkeypress="if(event.key==='Enter') sendChatMessage()"
-            style="flex: 1; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 0.75rem; font-size: 0.9rem;"
-          />
-          <button
-            onclick="startChatDictation()"
-            id="chatDictationBtn"
-            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.25rem;"
-          >
-            🎤
-          </button>
-          <button
-            onclick="sendChatMessage()"
-            id="sendChatBtn"
-            style="padding: 0.75rem 1.25rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.25rem;"
-          >
-            📤
-          </button>
+        <!-- Input z 3 przyciskami w kolumnie na mobile -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Input z przyciskiem wyczyść -->
+          <div style="position: relative;">
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="Zadaj pytanie nauczycielowi..."
+              onkeypress="if(event.key==='Enter') sendChatMessage()"
+              style="width: 100%; padding: 0.75rem 40px 0.75rem 0.75rem; border: 2px solid #e5e7eb; border-radius: 0.75rem; font-size: 0.9rem;"
+            />
+            <button
+              onclick="clearChatInput()"
+              class="clear-btn"
+              style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #ef4444; color: white; border: none; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center;"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <!-- 3 przyciski w jednej linii -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+            <button
+              onclick="startChatDictation()"
+              id="chatDictationBtn"
+              style="padding: 0.875rem; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.1rem; cursor: pointer;"
+            >
+              🎤 Nagraj
+            </button>
+            <button
+              onclick="copyLastTranslationToChat()"
+              style="padding: 0.875rem; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 0.8rem; cursor: pointer;"
+            >
+              📋 Wklej
+            </button>
+            <button
+              onclick="sendChatMessage()"
+              id="sendChatBtn"
+              style="padding: 0.875rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.1rem; cursor: pointer;"
+            >
+              📤 Wyślij
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -371,6 +417,7 @@
     let recognition = null;
     let isRecording = false;
     let isSpeaking = false;
+    let speechLang = 'pl'; // Domyślnie polski
     let history = [];
     let chatMessages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
     let isChatLoading = false;
@@ -613,6 +660,18 @@
     // SPEECH RECOGNITION
     // ============================================
 
+    function setSpeechLang(lang) {
+      speechLang = lang;
+      
+      // Update UI
+      document.getElementById('langBtnPL').classList.toggle('active', lang === 'pl');
+      document.getElementById('langBtnIT').classList.toggle('active', lang === 'it');
+      
+      // Update status
+      const langName = lang === 'pl' ? 'Polski' : 'Italiano';
+      document.getElementById('micStatus').textContent = `Język: ${langName} - Kliknij aby nagrać`;
+    }
+
     function toggleRecording() {
       if (isRecording) {
         stopRecording();
@@ -630,7 +689,7 @@
       recognition = new webkitSpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'pl-PL';
+      recognition.lang = speechLang === 'pl' ? 'pl-PL' : 'it-IT'; // Dynamiczny język
 
       recognition.onstart = () => {
         isRecording = true;
@@ -1230,6 +1289,29 @@ Come stai?"` }
       chatMessages = [];
       localStorage.removeItem('chatMessages');
       displayChat();
+    }
+
+    function clearTextInput() {
+      document.getElementById('inputText').value = '';
+    }
+
+    function clearChatInput() {
+      document.getElementById('chatInput').value = '';
+    }
+
+    function copyLastTranslationToChat() {
+      if (!lastTranslation) {
+        alert('Brak ostatniego tłumaczenia do skopiowania');
+        return;
+      }
+      
+      const input = document.getElementById('chatInput');
+      const question = `Mam pytanie o to tłumaczenie:\n\nOryginał: "${lastTranslation.original}"\nTłumaczenie: "${lastTranslation.translated}"\n\nPytanie: `;
+      input.value = question;
+      input.focus();
+      
+      // Scroll do input
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     // ============================================
