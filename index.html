@@ -243,8 +243,8 @@
       <!-- Zakładka Tekst -->
       <div id="tab-text" class="tab-content active">
         <div style="position: relative;">
-          <textarea id="inputText" placeholder="Scrivi / Napisz..." style="padding-right: 95px;"></textarea>
-          <button onclick="clearTextInput()" class="clear-btn" style="position: absolute; right: 55px; top: 10px; width: 30px; height: 30px; border-radius: 50%; background: #ef4444; color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center;">✕</button>
+          <textarea id="inputText" placeholder="Scrivi / Napisz..."></textarea>
+          <button onclick="clearTextInput()" class="clear-btn" style="position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; background: #ef4444; color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center;">✕</button>
           <button onclick="startTextDictation()" id="textDictationBtn" style="position: absolute; right: 10px; bottom: 10px; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transition: all 0.3s;">🎤</button>
         </div>
         <button class="btn btn-primary" onclick="translateText()" style="margin-top: 1rem;">🔄 Przetłumacz</button>
@@ -359,7 +359,7 @@
           </div>
         </div>
 
-        <!-- Input z 3 przyciskami w kolumnie na mobile -->
+        <!-- Input z 2 przyciskami w jednej linii (bez Wklej) -->
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <!-- Input z przyciskiem wyczyść -->
           <div style="position: relative;">
@@ -379,20 +379,14 @@
             </button>
           </div>
           
-          <!-- 3 przyciski w jednej linii -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+          <!-- 2 przyciski w jednej linii (Nagraj + Wyślij, bez Wklej) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
             <button
               onclick="startChatDictation()"
               id="chatDictationBtn"
               style="padding: 0.875rem; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.1rem; cursor: pointer;"
             >
               🎤 Nagraj
-            </button>
-            <button
-              onclick="copyLastTranslationToChat()"
-              style="padding: 0.875rem; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 0.8rem; cursor: pointer;"
-            >
-              📋 Wklej
             </button>
             <button
               onclick="sendChatMessage()"
@@ -892,7 +886,7 @@ INSTRUKCJE:
    - Akapity → zachowaj odstępy
    - Listy punktowane → zachowaj numerację/punkty
    - Nagłówki → zachowaj wielkość liter
-5. Odpowiedz TYLKO przetłumaczonym tekstem z zachowanym formatowaniem
+5. Odpowiedź TYLKO przetłumaczonym tekstem z zachowanym formatowaniem
 
 Przykład:
 Jeśli obraz zawiera:
