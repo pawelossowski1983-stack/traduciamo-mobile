@@ -81,8 +81,8 @@
     .tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: linear-gradient(to right, #3b82f6, #06b6d4); }
     
     /* Tab Content */
-    .tab-content { display: none; padding: 1.5rem; max-width: 100%; overflow: hidden; }
-    .tab-content.active { display: block; }
+    .tabs { display: flex; border-bottom: 2px solid #e5e7eb; background: #f9fafb; overflow-x: auto; }
+    .tabs::-webkit-scrollbar { display: none; }
     
     /* Forms in Tabs */
     textarea { width: 100%; min-height: 150px; padding: 1rem; border: 2px solid #e5e7eb; border-radius: 1rem; font-size: 1rem; font-family: inherit; resize: vertical; transition: all 0.3s; }
@@ -380,7 +380,7 @@
           </div>
           
           <!-- 3 przyciski w jednej linii -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
             <button
               onclick="startChatDictation()"
               id="chatDictationBtn"
@@ -388,12 +388,7 @@
             >
               🎤 Nagraj
             </button>
-            <button
-              onclick="copyLastTranslationToChat()"
-              style="padding: 0.875rem; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 0.8rem; cursor: pointer;"
-            >
-              📋 Wklej
-            </button>
+           
             <button
               onclick="sendChatMessage()"
               id="sendChatBtn"
