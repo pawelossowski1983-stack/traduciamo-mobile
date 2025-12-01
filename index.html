@@ -230,7 +230,10 @@
 
       <!-- Zakładka Tekst -->
       <div id="tab-text" class="tab-content active">
-        <textarea id="inputText" placeholder="Scrivi / Napisz..."></textarea>
+        <div style="position: relative;">
+          <textarea id="inputText" placeholder="Scrivi / Napisz..." style="padding-right: 50px;"></textarea>
+          <button onclick="startTextDictation()" id="textDictationBtn" style="position: absolute; right: 10px; bottom: 10px; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); transition: all 0.3s;">🎤</button>
+        </div>
         <button class="btn btn-primary" onclick="translateText()" style="margin-top: 1rem;">🔄 Przetłumacz</button>
         
         <div id="loading-text" class="loading hidden">
@@ -343,6 +346,13 @@
             onkeypress="if(event.key==='Enter') sendChatMessage()"
             style="flex: 1; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 0.75rem; font-size: 0.9rem;"
           />
+          <button
+            onclick="startChatDictation()"
+            id="chatDictationBtn"
+            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; border-radius: 0.75rem; font-weight: 700; font-size: 1.25rem;"
+          >
+            🎤
+          </button>
           <button
             onclick="sendChatMessage()"
             id="sendChatBtn"
@@ -689,6 +699,97 @@
     // ============================================
 
     let isPasteReady = false;
+
+    // ============================================
+    // SPEECH-TO-TEXT DICTATION (dla Textarea i Chat)
+    // ============================================
+
+    let dictationRecognition = null;
+    let dictationTarget = null; // 'text' lub 'chat'
+
+    function startTextDictation() {
+      dictationTarget = 'text';
+      startDictation('textDictationBtn');
+    }
+
+    function startChatDictation() {
+      dictationTarget = 'chat';
+      startDictation('chatDictationBtn');
+    }
+
+    function startDictation(btnId) {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert('Twoja przeglądarka nie obsługuje rozpoznawania mowy. Użyj Chrome lub Edge.');
+        return;
+      }
+
+      const btn = document.getElementById(btnId);
+      
+      // Jeśli już nagrywa - stop
+      if (dictationRecognition) {
+        stopDictation();
+        return;
+      }
+
+      dictationRecognition = new webkitSpeechRecognition();
+      dictationRecognition.continuous = false;
+      dictationRecognition.interimResults = false;
+      dictationRecognition.lang = 'pl-PL'; // Domyślnie polski
+
+      dictationRecognition.onstart = () => {
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #ec4899)';
+        btn.style.transform = 'scale(1.1)';
+      };
+
+      dictationRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        
+        if (dictationTarget === 'text') {
+          // Dodaj do textarea
+          const textarea = document.getElementById('inputText');
+          const current = textarea.value;
+          textarea.value = current + (current ? ' ' : '') + transcript;
+        } else if (dictationTarget === 'chat') {
+          // Dodaj do chat input
+          const input = document.getElementById('chatInput');
+          const current = input.value;
+          input.value = current + (current ? ' ' : '') + transcript;
+        }
+      };
+
+      dictationRecognition.onerror = (event) => {
+        console.error('Błąd dyktowania:', event.error);
+        stopDictation();
+      };
+
+      dictationRecognition.onend = () => {
+        stopDictation();
+      };
+
+      dictationRecognition.start();
+    }
+
+    function stopDictation() {
+      if (dictationRecognition) {
+        dictationRecognition.stop();
+        dictationRecognition = null;
+      }
+      
+      // Przywróć wygląd przycisków
+      const textBtn = document.getElementById('textDictationBtn');
+      const chatBtn = document.getElementById('chatDictationBtn');
+      
+      if (textBtn) {
+        textBtn.style.background = 'linear-gradient(135deg, #3b82f6, #06b6d4)';
+        textBtn.style.transform = 'scale(1)';
+      }
+      if (chatBtn) {
+        chatBtn.style.background = 'linear-gradient(135deg, #3b82f6, #06b6d4)';
+        chatBtn.style.transform = 'scale(1)';
+      }
+      
+      dictationTarget = null;
+    }
 
     // ============================================
     // PHOTO OCR (Mobile - Camera + Gallery)
